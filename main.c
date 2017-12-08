@@ -1,99 +1,61 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
+#include "reversi.h"
 
-#define FOR_X for(int x=1; x<9; x++)
-#define FOR_Y for(int y=1; y<9; y++)
-#define FOR_DIRECTION for(int d=0; d<8; d++)
-#define PRINT_SEPARATOR printf("---------\n")
-
-#define BOARD_MARK(c) (c==-1 ? '*' : c==0 ? ' ' : '#')
-#define XY_TO_POS(x, y) (y*10+x)
-#define POS_TO_X(pos) (x%10)
-#define POS_TO_Y(pos) (y/10)
-
-typedef char board_t[100];
-typedef struct board_state {
-  int turn;
-  board_t board;
-} board_state_t;
-
-const board_state_t INITIAL_STATE = {
-  1,
-  {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 1, -1, 0, 0, 0, 0,
-    0, 0, 0, 0, -1, 1, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  }
-};
-
-const int DIRECTIONS[8] = {-11, -10, -9, -1, 1, 9, 10, 11};
-
-void print_board(const board_t board) {
-  PRINT_SEPARATOR;
-  printf(" abcdefgh\n");
-  FOR_Y {
-    printf("%d", y);
-    FOR_X {
-      printf("%c", BOARD_MARK(board[XY_TO_POS(x, y)]));
-    }
-    printf("\n");
-  }
-}
-
-int get_user_input_pos(int turn) {
-  PRINT_SEPARATOR;
+int get_user_input_pos(board_t *board) {
   while(true) {
-    printf("[%c] 置く場所を入力してください[a-h][1-8] : ", BOARD_MARK(turn));
+    PRINT_SEPARATOR;
+    printf("[%s] 置く場所を入力してください[a-h][1-8] : ", BOARD_MARK(board->turn));
     char buf[3];
     scanf("%2s", buf);
     if ('a' <= buf[0] && buf[0] <= 'h' && '1' <= buf[1] && buf[1] <= '8') {
-      return (buf[1] - '0') * 10 + (buf[0] - 'a' + 1);
+      int pos = (buf[1] - '0') * 10 + (buf[0] - 'a' + 1);
+      if(check_stone(board, pos) > 0) return pos;
+      printf("そこには置けません。\n");
     } else {
       printf("入力が不正です。\n");
     }
   }
 }
 
-int put_stone(board_state_t *state, int pos, bool only_check) {
-  if(state->board[pos] != 0) return -1;
-  int flipped_stones = 0;
-  FOR_DIRECTION {
-    for(int search=1; search<8; search++){
-      int current_stone = state->board[pos + DIRECTIONS[d]*search];
-      if(current_stone == state->turn) {
-        flipped_stones += search - 1;
-        if (only_check) break;
-        for(int flip=1; flip<search; flip++) {
-          state->board[pos + DIRECTIONS[d]*flip] = state->turn;
-        }
-        break;
-      } else if(current_stone == 0) {
-        break;
-      }
+void play_game(board_t *board, pos_choice_function black, pos_choice_function white) {
+  while(true) {
+    print_board(board);
+    int pos = (board->turn == 1 ? black : white)(board);;
+    take_stone(board, pos);
+    if(board->state == GAME_STATE_PASSED) {
+      printf("PASS.\n");
+    } else if (board->state == GAME_STATE_FINISHED){
+      break;
     }
   }
-  if(flipped_stones > 0){
-    state->board[pos] = state->turn;
-    state->turn *= -1;
+}
+
+void play_game_silently(board_t *board, pos_choice_function black, pos_choice_function white) {
+  while(true) {
+    int pos = (board->turn == 1 ? black : white)(board);;
+    take_stone(board, pos);
+    if (board->state == GAME_STATE_FINISHED) return;
   }
-  return flipped_stones;
+}
+
+void evaluate_cpu(pos_choice_function black, pos_choice_function white) {
+  int black_win = 0, white_win = 0;
+  board_t board;
+  for(int i=0; i<100; i++) {
+    memcpy(&board, &INITIAL_STATE, sizeof(board));
+    play_game_silently(&board, black, white);
+    board.turn = PLAYER_TURN_BLACK;
+    stone_count_t count = count_stones(&board);
+    if(count.self > count.opponent) {
+      black_win++;
+    } else {
+      white_win++;
+    }
+  }
+  printf("Black : %d, White : %d\n", black_win, white_win);
 }
 
 int main() {
-  board_state_t current_state;
-  memcpy(&current_state, &INITIAL_STATE, sizeof(current_state));
-  while(true) {
-    print_board(current_state.board);
-    int pos = get_user_input_pos(current_state.turn);
-    put_stone(&current_state, pos, false);
-  }
-  return 0;
+  // Init
+  srand((unsigned)time(NULL));
+  evaluate_cpu(cpu_recursive_taker, cpu_random_taker);
 }
