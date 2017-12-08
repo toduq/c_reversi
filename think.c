@@ -75,7 +75,7 @@ int _evaluate_board(const board_t *board) {
   return score;
 }
 
-pos_score_t _recursive_much_taker(const board_t *board, int depth, int upper_limit) {
+pos_score_t _recursive_taker(const board_t *board, int depth, int upper_limit) {
   // 現状のボードの、置けるすべての場所に石を置いてみて、
   // そのうち最大の評価値の場所のとその評価値
   // 評価値とはdepthが0の時は、自分と相手の石の数の差
@@ -99,15 +99,14 @@ pos_score_t _recursive_much_taker(const board_t *board, int depth, int upper_lim
       pos_score_t score;
       switch(next_board.state) {
         case GAME_STATE_FINISHED:
-          score = _recursive_much_taker(&next_board, 0, 0);
+          score = _recursive_taker(&next_board, 0, 0);
           break;
         case GAME_STATE_CONTINUE:
-          // [FIXME] best.value*-1ってあってる？
-          score = _recursive_much_taker(&next_board, depth-1, best.value*-1);
+          score = _recursive_taker(&next_board, depth-1, best.value*-1);
           score.value *= -1;
           break;
         case GAME_STATE_PASSED:
-          score = _recursive_much_taker(&next_board, depth-1, upper_limit);
+          score = _recursive_taker(&next_board, depth-1, upper_limit);
           break;
       }
       best.searched_board_count += score.searched_board_count;
@@ -128,6 +127,6 @@ pos_score_t _recursive_much_taker(const board_t *board, int depth, int upper_lim
 }
 
 int cpu_recursive_taker(board_t *board) {
-  pos_score_t score = _recursive_much_taker(board, 5, 10000);
+  pos_score_t score = _recursive_taker(board, 7, 10000);
   return score.pos;
 }

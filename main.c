@@ -27,6 +27,8 @@ void play_game(board_t *board, pos_choice_function black, pos_choice_function wh
       break;
     }
   }
+  print_board(board);
+  printf("END GAME.\n");
 }
 
 void play_game_silently(board_t *board, pos_choice_function black, pos_choice_function white) {
@@ -54,8 +56,25 @@ void evaluate_cpu(pos_choice_function black, pos_choice_function white) {
   printf("Black : %d, White : %d\n", black_win, white_win);
 }
 
-int main() {
-  // Init
+int main(int argc, char *argv[]) {
   srand((unsigned)time(NULL));
-  evaluate_cpu(cpu_recursive_taker, cpu_random_taker);
+  if(argc == 3 && strcmp(argv[1], "play") == 0 && strcmp(argv[2], "black") == 0) {
+    printf("Player vs CPU\n");
+    board_t board;
+    memcpy(&board, &INITIAL_STATE, sizeof(board));
+    play_game(&board, get_user_input_pos, cpu_recursive_taker);
+  } else if(argc == 3 && strcmp(argv[1], "play") == 0 && strcmp(argv[2], "white") == 0) {
+    printf("CPU vs Player\n");
+    board_t board;
+    memcpy(&board, &INITIAL_STATE, sizeof(board));
+    play_game(&board, cpu_recursive_taker, get_user_input_pos);
+  } else if(argc == 2 && strcmp(argv[1], "cpu") == 0) {
+    printf("CPU vs CPU\n");
+    evaluate_cpu(cpu_recursive_taker, cpu_random_taker);
+  } else {
+    printf("main play black -- play with black\n");
+    printf("main play white -- play with white\n");
+    printf("main cpu        -- cpu vs cpu\n");
+  }
+  return 0;
 }
