@@ -1,3 +1,4 @@
+#define _GRAPHTREE_DISABLE_
 #include "reversi.h"
 #include "graphtree.h"
 
@@ -62,21 +63,29 @@ static const int POS_EVALUATION[100] = {
 
 graphtree_t *current_graph;
 
-void graphtree_exit_board(const board_t *board, char *format, ...) {
-  char buf[1000] = {'\0'};
-  va_list arg;
-  va_start(arg, format);
-  vsprintf(buf, format, arg);
-  va_end(arg);
-  strcat(buf, "\\n");
-  FOR_Y {
-    FOR_X {
-      strcat(buf, BOARD_MARK(board->stones[XY_TO_POS(x,y)]));
-    }
+#ifdef _GRAPHTREE_DISABLE_
+  void graphtree_exit_board(const board_t *board, char *format, ...) {}
+#else
+  void graphtree_exit_board(const board_t *board, char *format, ...) {
+    char buf[1000] = {'\0'};
+    va_list arg;
+    va_start(arg, format);
+    vsprintf(buf, format, arg);
+    va_end(arg);
     strcat(buf, "\\n");
+    FOR_Y {
+      FOR_X {
+        strcat(buf, board->last_pos == XY_TO_POS(x,y) ? "＊" : BOARD_MARK(board->stones[XY_TO_POS(x,y)]));
+      }
+      strcat(buf, "\\n");
+    }
+    graphtree_exit(current_graph, buf);
   }
-  graphtree_exit(current_graph, buf);
-}
+#endif
+
+static const int SEARCH_DIRECTION[4][2] = {
+  {1, 1}, {-1, 1}, {1, -1}, {-1, -1}
+};
 
 int _evaluate_board(const board_t *board) {
   stone_count_t count = count_stones(board);
@@ -90,10 +99,54 @@ int _evaluate_board(const board_t *board) {
         score += POS_EVALUATION[pos] * (board->stones[pos]==board->turn ? 1 : -1);
       }
     }
+    // 確定石を計算する
+    for(int d=0; d<4; d++){
+      int dx = SEARCH_DIRECTION[d][0];
+      int dy = SEARCH_DIRECTION[d][1];
+      int corner_x = dx==1 ? 1 : 9;
+      int corner_y = dy==1 ? 1 : 9;
+      int corner_stone = board->stones[XY_TO_POS(corner_x, corner_y)];
+      // 隅に石がなけれあ探索をやめる
+      if(corner_stone == 0) continue;
+      int stable_stone_count = 0;
+      int x_chain, y_chain;
+      // 辺の横方向への探索
+      for(int search=1; search<=5; search++){
+        int stone = board->stones[XY_TO_POS(corner_x + dx*search, corner_y)];
+        if(stone != corner_stone) break;
+        stable_stone_count++;
+        x_chain++;
+      }
+      // 辺から1段離れた横方向への探索
+      if(x_chain > 0 && board->stones[XY_TO_POS(corner_x, corner_y + dy)] == corner_stone) {
+        for(int search=1; search<=x_chain; search++){
+          int stone = board->stones[XY_TO_POS(corner_x + dx*search, corner_y + dy)];
+          if(stone != corner_stone) break;
+          stable_stone_count++;
+        }
+      }
+      // 辺の縦方向への探索
+      for(int search=1; search<=5; search++){
+        int stone = board->stones[XY_TO_POS(corner_x, corner_y + dy*search)];
+        if(stone != corner_stone) break;
+        stable_stone_count++;
+        y_chain++;
+      }
+      // 辺から1段離れた縦方向への探索
+      if(y_chain > 0 && board->stones[XY_TO_POS(corner_x + dx, corner_y)] == corner_stone) {
+        for(int search=1; search<=y_chain; search++){
+          int stone = board->stones[XY_TO_POS(corner_x + dx, corner_y + dy*search)];
+          if(stone != corner_stone) break;
+          stable_stone_count++;
+        }
+      }
+      score += 15 * stable_stone_count * (board->turn == corner_stone ? 1 : -1);
+    }
     return score;
   } else {
     // 終盤は石の多さのみを評価にする
-    return (count.self - count.opponent) * 100;
+    // board->turnは相手になっていることに注意する
+    return (count.self - count.opponent) * -1000;
   }
 }
 
@@ -159,8 +212,17 @@ int cpu_recursive_taker(board_t *board) {
   sprintf(filename, "visualize-%d.dot", count.self + count.opponent);
   graphtree_init(current_graph, filename);
   graphtree_enter(current_graph);
-  pos_score_t score = _recursive_taker(board, 4, 999999, -999999);
-  graphtree_exit_board(board, "[root] evaluated : %d node", score.searched_board_count);
+  pos_score_t score;
+  #ifndef _GRAPHTREE_DISABLE_
+    score = _recursive_taker(board, 3, 999999, -999999);
+  #else
+    if(count.self + count.opponent < 52) {
+      score = _recursive_taker(board, 7, 999999, -999999);
+    } else {
+      score = _recursive_taker(board, 12, 999999, -999999);
+    }
+  #endif
+  graphtree_exit(current_graph, "[root] evaluated : %d node", score.searched_board_count);
   graphtree_save(current_graph);
   return score.pos;
 }

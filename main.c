@@ -44,7 +44,7 @@ void evaluate_cpu(pos_choice_function black, pos_choice_function white) {
   board_t board;
   for(int i=0; i<1; i++) {
     memcpy(&board, &INITIAL_STATE, sizeof(board));
-    play_game_silently(&board, black, white);
+    play_game(&board, black, white);
     board.turn = PLAYER_TURN_BLACK;
     stone_count_t count = count_stones(&board);
     if(count.self > count.opponent) {
@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     play_game(&board, cpu_recursive_taker, get_user_input_pos);
   } else if(argc == 2 && strcmp(argv[1], "cpu") == 0) {
     printf("CPU vs CPU\n");
-    evaluate_cpu(cpu_recursive_taker, cpu_much_taker);
+    evaluate_cpu(cpu_recursive_taker, cpu_random_taker);
   } else {
     printf("main play black -- play with black\n");
     printf("main play white -- play with white\n");

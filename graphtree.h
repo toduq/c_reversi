@@ -17,6 +17,17 @@ typedef struct graphtree {
   FILE *fp;
 } graphtree_t;
 
+#ifdef _GRAPHTREE_DISABLE_
+
+void graphtree_init(graphtree_t *graph, char *filename) {}
+int graphtree_enter(graphtree_t *graph) {return 0;}
+int graphtree_exit(graphtree_t *graph, char *format, ...) {return 0;}
+int graphtree_down(graphtree_t *graph, char *format, ...) {return 0;}
+int graphtree_up(graphtree_t *graph) {return 0;}
+void graphtree_save(graphtree_t *graph) {}
+
+#else
+
 void graphtree_init(graphtree_t *graph, char *filename) {
   graph->depth = 0;
   graph->current_id = 0;
@@ -75,4 +86,5 @@ void graphtree_save(graphtree_t *graph) {
   fclose(graph->fp);
 }
 
+#endif
 #endif

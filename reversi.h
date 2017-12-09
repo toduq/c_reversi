@@ -13,7 +13,7 @@
 #define FOR_Y for(int y=1; y<9; y++)
 #define FOR_DIRECTION for(int d=0; d<8; d++)
 
-#define XY_TO_POS(x, y) (y*10+x)
+#define XY_TO_POS(x, y) ((y)*10+(x))
 
 #define PRINT_SEPARATOR printf("\n------------------\n\n")
 #define BOARD_MARK(c) (c==-1 ? "⬜" : c==0 ? "　" : "⬛")
@@ -33,6 +33,7 @@ typedef struct board {
   player_turn_t turn;
   board_state_t state;
   char stones[100];
+  int last_pos;
 } board_t;
 
 typedef struct stone_count {

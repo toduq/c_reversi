@@ -14,7 +14,8 @@ const board_t INITIAL_STATE = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  }
+  },
+  -1
 };
 
 const int DIRECTIONS[8] = {-11, -10, -9, -1, 1, 9, 10, 11};
@@ -85,6 +86,7 @@ int take_stone(board_t *board, int pos) {
   assert(count > 0);
   board->stones[pos] = board->turn;
   board->turn *= -1;
+  board->last_pos = pos;
   if(is_pass(board)){
     board->state = GAME_STATE_PASSED;
     board->turn *= -1;
@@ -113,5 +115,4 @@ void print_board(const board_t *board) {
   } else {
     printf("%s:%d, %s:%d\n", BOARD_MARK(PLAYER_TURN_BLACK), count.opponent, BOARD_MARK(PLAYER_TURN_WHITE), count.self);
   }
-
 }
