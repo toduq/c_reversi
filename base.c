@@ -108,5 +108,10 @@ void print_board(const board_t *board) {
     printf("\n");
   }
   stone_count_t count = count_stones(board);
-  printf("自分 : %d, 相手 : %d\n", count.self, count.opponent);
+  if(board->turn == PLAYER_TURN_BLACK) {
+    printf("%s:%d, %s:%d\n", BOARD_MARK(PLAYER_TURN_BLACK), count.self, BOARD_MARK(PLAYER_TURN_WHITE), count.opponent);
+  } else {
+    printf("%s:%d, %s:%d\n", BOARD_MARK(PLAYER_TURN_BLACK), count.opponent, BOARD_MARK(PLAYER_TURN_WHITE), count.self);
+  }
+
 }

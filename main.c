@@ -42,7 +42,7 @@ void play_game_silently(board_t *board, pos_choice_function black, pos_choice_fu
 void evaluate_cpu(pos_choice_function black, pos_choice_function white) {
   int black_win = 0, white_win = 0;
   board_t board;
-  for(int i=0; i<100; i++) {
+  for(int i=0; i<1; i++) {
     memcpy(&board, &INITIAL_STATE, sizeof(board));
     play_game_silently(&board, black, white);
     board.turn = PLAYER_TURN_BLACK;
@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     play_game(&board, cpu_recursive_taker, get_user_input_pos);
   } else if(argc == 2 && strcmp(argv[1], "cpu") == 0) {
     printf("CPU vs CPU\n");
-    evaluate_cpu(cpu_recursive_taker, cpu_random_taker);
+    evaluate_cpu(cpu_recursive_taker, cpu_much_taker);
   } else {
     printf("main play black -- play with black\n");
     printf("main play white -- play with white\n");
