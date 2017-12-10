@@ -1,12 +1,20 @@
-CC := gcc
-CFLAGS := -g -Wall -Wextra
+COMPILER = clang
+CFLAGS   = -Wall -Wextra -pedantic
+INCLUDE  = -I./include
+TARGET   = ./$(shell basename `readlink -f .`)
+SRCDIR   = ./src
+SOURCES  = $(wildcard $(SRCDIR)/*.c)
+OBJDIR   = ./obj
+OBJECTS  = $(addprefix $(OBJDIR)/, $(notdir $(SOURCES:.c=.o)))
 
-main: main.o base.o think.o
+$(TARGET): $(OBJECTS) $(LIBS)
+	$(COMPILER) -o $@ $^
 
-main.o base.o: reversi.h
-think.o: reversi.h graphtree.h
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+	-mkdir -p $(OBJDIR)
+	$(COMPILER) $(CFLAGS) $(INCLUDE) -o $@ -c $<
+
+all: clean $(TARGET)
 
 clean:
-	rm main
-	rm main.o base.o think.o
-	rm *.dot
+	-rm -f $(OBJECTS) $(TARGET)
